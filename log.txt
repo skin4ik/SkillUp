@@ -1,0 +1,27 @@
+Server started on 127.0.0.1 : 1222
+
+Server started on 127.0.0.1 : 1222
+
+Server started on 127.0.0.1 : 8890
+
+Master Socket Changed.
+
+Connecting socket.
+
+Accepted client 
+
+Handshaking headers from client:GET / HTTP/1.1
+Host: 127.0.0.1:8890
+Connection: Upgrade
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade: websocket
+Origin: http://127.0.0.1:63342
+Sec-WebSocket-Version: 13
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36
+Accept-Encoding: gzip, deflate, sdch
+Accept-Language: ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4
+Sec-WebSocket-Key: y8sSP7ONREQ/wcGhurKyKA==
+Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+
+Data from client:Connection with "ws://echo.websocket.org" Подключение установлено обоюдно, отлично!

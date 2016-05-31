@@ -1,51 +1,115 @@
 <?php
 
-function socket()
+class Socket
 {
+    protected $ip;
+    protected $port;
 
-    $startTime = round(microtime(true),2);
-    echo "WELCOME TO SOCKET \n";
+    protected $connects = array();
 
-    $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-
-    $bind = socket_bind($socket, '127.0.0.1', 8890);
-
-    socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
-
-    socket_listen($socket, 10);
-
-    while(true){ //Бесконечный цикл ожидания подключений
-        echo "Waiting... ";
-        $accept = @socket_accept($socket); //Зависаем пока не получим ответа
-        if($accept === false){
-            echo "Error: " . socket_strerror(socket_last_error())."<br />\r\n";
-            usleep(100);
-        } else {
-            echo "OK <br />\r\n";
-            echo "Client \"".$accept."\" has connected<br />\r\n";
-        }
-
-        $msg = "Hello, Client!";
-
-        echo "Send to client \"".$msg."\"... ";
-        socket_write($accept, $msg);
-        echo "OK <br />\r\n";
-
-        if( ( round(microtime(true),2) - $startTime) > 100) {
-            echo "time = ".(round(microtime(true),2) - $startTime);
-            echo "return <br />\r\n";
-            return $socket;
-        }
-
-
+    public function __construct($ip, $port)
+    {
+        $this->ip= $ip;
+        $this->port= $port;
     }
-}
 
-socket();
+    public function connect()
+    {
+        echo "WELCOME\n";
+        $address = "$this->ip:$this->port";
+        $socket = stream_socket_server($address, $errno, $errstr);
 
-if (isset($socket)){
-    echo "Closing connection... ";
-    @socket_shutdown($socket);
-    socket_close($socket);
-    echo "OK <br />\r\n";
+        while (true) {
+            $read = $this->connects;
+            $write = $except = null;
+            $read [] = $socket;
+            if (!stream_select($read, $write, $except, null)) {
+                break;
+            }
+
+            if (in_array($socket, $read)) {
+                if (($connect = stream_socket_accept($socket, -1))/* && $info = $this->handshake($connect)*/) {
+                    $this->connects[] = $connect;
+                    $this->onOpen($connect, "Welcome to my socket\n");
+                    echo "New connect!\n";
+                }
+            }
+
+
+            foreach ($this->connects as $connect) {
+                $data = fread($connect, 1000);
+                $isExit = (boolean) ((string)$data == "exit");
+                echo $isExit;
+                if ($isExit) {
+                    echo $connect . " removed";
+                    fclose($connect);
+                    unset($this->connects[array_search($connect, $this->connects)]);
+                } else if ($data != '') {
+                    $this->onMessage($connect, $data);
+                    $this->sendMsg($connect, $data);
+                }
+                //echo "\n";
+                //$this->onMessage($connect, $dataSocket);
+                //echo "\n";
+            }
+        }
+    }
+
+    protected function handshake($connect)
+    {
+
+        $line = fgets($connect);
+        $header = explode(' ', $line);
+        print_r($header);
+        $inf = array(
+            'method' => $header[0],
+            'uri' => $header[1]
+        );
+
+        while ($line = rtrim(fgets($connect))) {
+            if (preg_match('/\A(\S+): (.*)\z/', $line, $matches)) {
+                $inf[$matches[1]] = $matches[2];
+            } else {
+                break;
+            }
+        }
+
+        $address = explode(':', stream_socket_get_name($connect, true));
+        $inf['ip'] = $address[0];
+        $inf['port'] = $address[1];
+
+        if (empty($inf['Sec-WebSocket-Key'])) {
+            return false;
+        }
+
+        $SecWebSocketAccept = base64_encode(pack('H*', sha1($inf['Sec-WebSocket-Key'] . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
+        $response = "HTTP/1.1 101 Web Socket Protocol Handshake\r\n" .
+            "Upgrade: websocket\r\n" .
+            "Connection: Upgrade\r\n" .
+            "Sec-WebSocket-Accept:$SecWebSocketAccept\r\n\r\n";
+
+        fwrite($connect, $response);
+
+        return $inf;
+    }
+
+    protected function onMessage($connect, $data)
+    {
+        print_r($data);
+    }
+
+    protected function onOpen($connect, $msg)
+    {
+        fwrite($connect, $msg);
+    }
+
+    protected function sendMsg($currentConnect, $msg)
+    {
+        foreach ($this->connects as $connect) {
+            if ($connect != $currentConnect) {
+                fwrite($connect, $currentConnect . " say: " . $msg);
+            }
+        }
+    }
+
 }
