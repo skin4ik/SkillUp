@@ -18,7 +18,6 @@ class Socket
         echo "WELCOME\n";
         $address = "$this->ip:$this->port";
         $socket = stream_socket_server($address, $errno, $errstr);
-
         while (true) {
             $read = $this->connects;
             $write = $except = null;
@@ -26,31 +25,18 @@ class Socket
             if (!stream_select($read, $write, $except, null)) {
                 break;
             }
-
             if (in_array($socket, $read)) {
                 if (($connect = stream_socket_accept($socket, -1))/* && $info = $this->handshake($connect)*/) {
                     $this->connects[] = $connect;
+                    unset($read[array_search($socket, $read)]);
                     $this->onOpen($connect, "Welcome to my socket\n");
                     echo "New connect!\n";
                 }
             }
-
-
-            foreach ($this->connects as $connect) {
-                $data = fread($connect, 1000);
-                $isExit = (boolean) ((string)$data == "exit");
-                echo $isExit;
-                if ($isExit) {
-                    echo $connect . " removed";
-                    fclose($connect);
-                    unset($this->connects[array_search($connect, $this->connects)]);
-                } else if ($data != '') {
-                    $this->onMessage($connect, $data);
-                    $this->sendMsg($connect, $data);
-                }
-                //echo "\n";
-                //$this->onMessage($connect, $dataSocket);
-                //echo "\n";
+            foreach ($read as $connect) {
+                $data = fread($connect, 100000);
+                $this->onMessage($connect, $data);
+                $this->sendMsg($connect, $data);
             }
         }
     }
@@ -95,7 +81,7 @@ class Socket
 
     protected function onMessage($connect, $data)
     {
-        print_r($data);
+        echo "$data";
     }
 
     protected function onOpen($connect, $msg)
