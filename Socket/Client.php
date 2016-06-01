@@ -14,15 +14,22 @@ class Client
     public function start()
     {
         $address = "$this->host:$this->port";
+        // use camelCase
+        // используй имена, которые характеризуют то что лежит внутри, stream_socket_client вернет ресурс потока, а не конект
         $connect = stream_socket_client($address, $errno, $errstr);
         $stdin = fopen('php://stdin', 'r');
+        
         if (!$connect) {
+            // http://i.imgur.com/YhsVGbk.png
             echo "$errstr ($errno)<br />\n";
         } else {
+            // почему не заюзать $address
             echo "Welcome to $this->host:$this->port\n";
+            
             while (!feof($connect)) {
                 $streams = array($connect, $stdin);
                 $write = $except = null;
+                
                 if (!stream_select($streams, $write, $except, null)) {
                     break;
                 }
@@ -30,8 +37,10 @@ class Client
                 foreach ($streams as $stream) {
                     if ($stream == $stdin) {
                         $msg = trim(fgets($stdin));
+                        // используй полные имена
                         $this->send($connect, $msg);
                     } else {
+                        // вынести в константу
                         $msg = fread($stream, 10000);
                         $this->onMessage($msg);
                     }
