@@ -86,7 +86,7 @@ class Socket
 
     protected function onMessage($connect, $data)
     {
-        echo "$connect: $data";
+        echo "$connect: $data\n";
     }
 
     protected function onOpen($connect, $msg)
@@ -98,7 +98,7 @@ class Socket
     {
         foreach ($this->connects as $connect) {
             if ($connect != $currentConnect) {
-                fwrite($connect, $currentConnect . " say: " . $msg, 100000);
+                fwrite($connect, "$currentConnect say: $msg", 100000);
             }
         }
     }

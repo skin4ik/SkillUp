@@ -20,7 +20,6 @@ class Client
             echo "$errstr ($errno)<br />\n";
         } else {
             echo "Welcome to $this->host:$this->port\n";
-            //fwrite($stream, "GET / HTTP/1.0\r\nHost: $this->host\r\nAccept: */*\r\n\r\n");
             while (!feof($connect)) {
                 $streams = array($connect, $stdin);
                 $write = $except = null;
@@ -31,7 +30,7 @@ class Client
                 foreach ($streams as $stream) {
                     if ($stream == $stdin) {
                         $msg = trim(fgets($stdin));
-                        $this->send($stream, $msg);
+                        $this->send($connect, $msg);
                     } else {
                         $msg = fread($stream, 10000);
                         $this->onMessage($msg);
@@ -49,7 +48,7 @@ class Client
 
     protected function onMessage($msg)
     {
-        print_r($msg);
+        echo "$msg\n";
     }
 }
 
