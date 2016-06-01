@@ -14,25 +14,31 @@ class Client
     public function start()
     {
         $address = "$this->host:$this->port";
-        $stream = stream_socket_client($address, $errno, $errstr);
-        if (!$stream) {
+        $connect = stream_socket_client($address, $errno, $errstr);
+        $stdin = fopen('php://stdin', 'r');
+        if (!$connect) {
             echo "$errstr ($errno)<br />\n";
         } else {
             echo "Welcome to $this->host:$this->port\n";
             //fwrite($stream, "GET / HTTP/1.0\r\nHost: $this->host\r\nAccept: */*\r\n\r\n");
-            while (!feof($stream)) {
-                $streams[] = $stream;
+            while (!feof($connect)) {
+                $streams = array($connect, $stdin);
                 $write = $except = null;
                 if (!stream_select($streams, $write, $except, null)) {
                     break;
                 }
-                $msg = trim(fgets(STDIN));
-                $data = fread($stream, 1000);
-                echo "1 " . $data . "\n";
-                //$this->onMessage($stream, $data);
-                $this->send($stream, $msg);
+
+                foreach ($streams as $stream) {
+                    if ($stream == $stdin) {
+                        $msg = trim(fgets($stdin));
+                        $this->send($stream, $msg);
+                    } else {
+                        $msg = fread($stream, 10000);
+                        $this->onMessage($msg);
+                    }
+                }
             }
-            fclose($stream);
+            fclose($connect);
         }
     }
 
@@ -41,7 +47,7 @@ class Client
         fwrite($resource, $msg);
     }
 
-    protected function onMessage($resource, $msg)
+    protected function onMessage($msg)
     {
         print_r($msg);
     }

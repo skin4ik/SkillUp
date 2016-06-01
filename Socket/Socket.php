@@ -35,6 +35,11 @@ class Socket
             }
             foreach ($read as $connect) {
                 $data = fread($connect, 100000);
+                if ($data == false) {
+                    unset($this->connects[array_search($connect, $this->connects)]);
+                    echo "$connect disconnected\n";
+                    break;
+                }
                 $this->onMessage($connect, $data);
                 $this->sendMsg($connect, $data);
             }
@@ -81,19 +86,19 @@ class Socket
 
     protected function onMessage($connect, $data)
     {
-        echo "$data";
+        echo "$connect: $data";
     }
 
     protected function onOpen($connect, $msg)
     {
-        fwrite($connect, $msg);
+        fwrite($connect, $msg, 10000);
     }
 
     protected function sendMsg($currentConnect, $msg)
     {
         foreach ($this->connects as $connect) {
             if ($connect != $currentConnect) {
-                fwrite($connect, $currentConnect . " say: " . $msg);
+                fwrite($connect, $currentConnect . " say: " . $msg, 100000);
             }
         }
     }
